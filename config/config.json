@@ -1,0 +1,26 @@
+{
+  "port": 8000,
+  "mongoose": {
+    "uri": "mongodb://localhost/ums",
+    "enableFeatures": {
+      "useNewUrlParser": true,
+      "useCreateIndex": true
+    },
+    "options": {
+      "server": {
+        "socketOptions": {
+          "keepAlive": 1
+        }
+      }
+    }
+  },
+  "session": {
+    "secret": "someString",
+    "key": "sid",
+    "cookie": {
+      "path": "/",
+      "httpOnly": false,
+      "maxAge": null
+    }
+  }
+}
