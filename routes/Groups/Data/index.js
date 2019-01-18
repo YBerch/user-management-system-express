@@ -4,9 +4,25 @@ const ObjectID = require('mongodb').ObjectID;
 
 /** get groups list (GET) **/
 exports.getGroupsList = (req, res, next) => {
-  const { page, size } = req.query;
+  const { page, size, groups } = req.query;
 
-  const records = Group.find({})
+  const groupsArr = groups && groups !== 'undefined' && JSON.parse(groups);
+
+  if(groupsArr) {
+    if (Array.isArray(groupsArr)) {
+      try {
+        for(let i=0; i<groupsArr.length; i++){
+          new ObjectID(groupsArr[i])
+        }
+      } catch (e) {
+        return next(new HttpError(401, 'Incorrect group id'))
+      }
+    } else {
+      return next(new HttpError(401, 'Incorrect groups param format'))
+    }
+  }
+
+  const records = Group.find(groupsArr ? {"_id": {"$in": groupsArr}} : {})
     .skip(page * size - size)
     .limit(+size);
 
@@ -17,7 +33,7 @@ exports.getGroupsList = (req, res, next) => {
       }
       records.estimatedDocumentCount()
         .then(totalSize => {
-          res.json({totalSize, list: groups})
+          res.json({totalSize, [page]: groups})
         })
     })
     .catch(err => next(err))
@@ -73,7 +89,11 @@ exports.createGroup = (req, res, next) => {
       }
     })
     .then(group => {
-      res.json({group, message: 'Create group success'})
+      res.json({group, message: 'Create group success'});
+      const socket = require('bin/www');
+
+      /** emit message for all users for update users data **/
+      socket.emit('ping', { payload: 'groups' })
     })
     .catch(err => {
       next(err)
