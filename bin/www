@@ -21,7 +21,24 @@ app.set('port', config.get('port'));
  * Create HTTP server.
  */
 
-var server = http.createServer(app);
+const server = http.createServer(app);
+
+
+/**
+ * Create and export socket.io connection.
+ */
+
+const io = require('socket.io').listen(server);
+
+io.on('connection', (socket) => {
+  socket.on('disconnect', () => {
+    socket.emit('ping', { payload: 'disconnect' })
+  })
+  socket.emit('ping', { payload: 'connect' });
+});
+
+
+module.exports = io;
 
 /**
  * Listen on provided port, on all network interfaces.

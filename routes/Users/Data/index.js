@@ -89,7 +89,12 @@ exports.createUser = (req, res, next) => {
       }
     })
     .then((user) => {
-      res.json({user, session: req.session, message: 'register'})
+      res.json({user, session: req.session, message: 'register'});
+
+      const socket = require('bin/www');
+
+      /** emit message for all users for update users data **/
+      socket.emit('ping', { payload: 'users' })
     })
     .catch(err => next(err));
 };
@@ -105,11 +110,18 @@ exports.deleteUser = (req, res, next) => {
   User.findById(id)
     .then(user => {
       if(!user){
-        next(new HttpError(404, 'User not found'))
+        return next(new HttpError(404, 'User not found'));
+      } else if(user.groups.length) {
+        return next(new HttpError(402, 'Cannot delete user with existing groups'));
       } else {
         User.deleteOne({_id: id})
           .then(() => {
-            res.json({message: 'Delete success'})
+            res.json({message: 'Delete success'});
+
+            const socket = require('bin/www');
+
+            /** emit message for all users for update users data **/
+            socket.emit('ping', { payload: 'users' })
           })
       }
     })
@@ -118,12 +130,24 @@ exports.deleteUser = (req, res, next) => {
 
 /** update user (PATCH) **/
 exports.updateUser = (req, res, next) => {
-  const {firstName, lastName, email} = req.body;
+  const {firstName, lastName, email, phone, permission} = req.body;
+
+  if(req.session.user.permission === 'moderator' && permission !== 'user'){
+    throw new HttpError(403, 'Moderator can create user only with "user" permission ')
+  }
+
+  const permissionValid = permission === 'administrator' || permission === 'moderator' || permission === 'user';
+
+  if(!permissionValid){
+    throw new HttpError(400, 'permission type does not exist')
+  }
 
   const updateObject = {};
   firstName && (updateObject.firstName = firstName);
   lastName && (updateObject.lastName = lastName);
   email && (updateObject.email = email);
+  phone && (updateObject.phone = phone);
+  permission && (updateObject.permission = permission);
 
   let id = null;
   try {
@@ -135,7 +159,12 @@ exports.updateUser = (req, res, next) => {
     .then(result => {
       if(result.n){
         if(result.nModified){
-          res.json({result, message: 'User update success'})
+          res.json({result, message: 'User update success'});
+
+          const socket = require('bin/www');
+
+          /** emit message for all users for update users data **/
+          socket.emit('ping', { payload: 'users' })
         } else {
           next(new HttpError(400, 'Not modified'));
         }
@@ -201,7 +230,12 @@ exports.deleteGroupFromUser = (req, res, next) => {
             } else if (index !== -1) {
               user.groups.splice(index, 1);
               user.save();
-              res.json({groups: user.groups, message: 'Delete success'})
+              res.json({groups: user.groups, userId: id, message: 'Delete success'});
+
+              const socket = require('bin/www');
+
+              /** emit message for all users for update users data **/
+              socket.emit('ping', { payload: 'users' })
             } else {
               next(new HttpError(403, 'Group does not exist in user list'))
             }
