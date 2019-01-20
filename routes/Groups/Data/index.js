@@ -33,7 +33,12 @@ exports.getGroupsList = (req, res, next) => {
       }
       records.estimatedDocumentCount()
         .then(totalSize => {
-          res.json({totalSize, [page]: groups})
+          const listName = page || 'list';
+          if(groupsArr){
+            res.json(groups)
+          } else {
+            res.json({totalSize, [listName]: groups})
+          }
         })
     })
     .catch(err => next(err))

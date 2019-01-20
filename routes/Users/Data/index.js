@@ -230,7 +230,12 @@ exports.deleteGroupFromUser = (req, res, next) => {
             } else if (index !== -1) {
               user.groups.splice(index, 1);
               user.save();
-              res.json({groups: user.groups, message: 'Delete success'})
+              res.json({groups: user.groups, userId: id, message: 'Delete success'});
+
+              const socket = require('bin/www');
+
+              /** emit message for all users for update users data **/
+              socket.emit('ping', { payload: 'users' })
             } else {
               next(new HttpError(403, 'Group does not exist in user list'))
             }
