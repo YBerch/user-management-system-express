@@ -197,7 +197,12 @@ exports.addGroupToUser = (req, res, next) => {
             } else if (user.groups.indexOf(groupId) === -1) {
               user.groups.push(groupId);
               user.save();
-              res.json({groups: user.groups, message: 'Add success'})
+              res.json({groups: user.groups, userId: id, message: 'Add success'});
+
+              const socket = require('bin/www');
+
+              /** emit message for all users for update users data **/
+              socket.emit('ping', { payload: 'users' })
             } else {
               next(new HttpError(403, 'Group already exist'))
             }
