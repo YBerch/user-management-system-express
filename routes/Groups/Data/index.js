@@ -138,6 +138,11 @@ exports.updateGroup = (req, res, next) => {
       if(result.n){
         if(result.nModified){
           res.json({message: 'Group update success'})
+
+          const socket = require('bin/www');
+
+          /** emit message for all users for update users data **/
+          socket.emit('ping', { payload: 'groups' })
         } else {
           next(new HttpError(400, 'Not modified'));
         }
