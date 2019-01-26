@@ -5,9 +5,19 @@ const ObjectID = require('mongodb').ObjectID;
 
 /** get users list (GET) **/
 exports.getUsersList = (req, res, next) => {
-  const { page, size } = req.query;
+  const { page, size, groupId } = req.query;
 
-  const records = User.find()
+  let id = '';
+
+  if(groupId){
+    try {
+      id = new ObjectID(groupId)
+    } catch(e){
+      return next(new HttpError(401, 'Incorrect group id'))
+    }
+  }
+
+  const records = User.find(groupId ? {groups: {$all: [id]}} : {})
     .skip(page * size - size)
     .limit(+size);
 
@@ -16,9 +26,14 @@ exports.getUsersList = (req, res, next) => {
       if(!users) {
         throw new HttpError(404, 'Database is empty')
       }
+
       records.estimatedDocumentCount()
         .then(totalSize => {
-          res.json({totalSize, [page]: users})
+          if(groupId){
+            res.json(users)
+          } else {
+            res.json({totalSize, [page]: users})
+          }
         })
     })
     .catch(err => next(err))
@@ -109,10 +124,8 @@ exports.deleteUser = (req, res, next) => {
   }
   User.findById(id)
     .then(user => {
-      if(!user){
+      if (!user) {
         return next(new HttpError(404, 'User not found'));
-      } else if(user.groups.length) {
-        return next(new HttpError(402, 'Cannot delete user with existing groups'));
       } else {
         User.deleteOne({_id: id})
           .then(() => {
