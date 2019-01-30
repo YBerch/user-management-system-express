@@ -65,13 +65,13 @@ exports.createUser = (req, res, next) => {
 
   /** to form required parameters array for error message **/
   let requiredParams = [];
-  for(const key in req.body){
-    if(req.body.hasOwnProperty(key)) {
-      if (!req.body[key] || key === 'groups' && !req.body[key].length){
-        requiredParams.push(key)
-      }
-    }
-  }
+  // for(const key in req.body){
+  //   if(req.body.hasOwnProperty(key)) {
+  //     if (!req.body[key] || key === 'groups' && !req.body[key].length){
+  //       requiredParams.push(key)
+  //     }
+  //   }
+  // }
 
   /** throw error if required parameters array is not empty **/
   if(requiredParams.length) {

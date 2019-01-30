@@ -21,6 +21,16 @@ const requireModels = () => {
 const createUsers = () => {
   const users = [
     {
+      firstName: 'test',
+      lastName: 'test',
+      email: 'test@test.com',
+      password: 'supervasya',
+      phone: '0000000000',
+      permission: 'administrator',
+      dateOfBirth: new Date('1990-05-08'),
+      address: 'Ukraine, Kyiv, Khreschatyk 1/2'
+    },
+    {
       firstName: 'Vasja',
       lastName: 'Pupkin',
       email: 'vasja@email.com',

@@ -3,7 +3,7 @@ const router = express.Router();
 const checkAuth = require('middleware/checkAuth');
 const checkAdministrator = require('middleware/checkAdministrator');
 const checkModerator = require('middleware/checkModerator');
-const methods = require('./Data');
+const methods = require('./Methods');
 
 router.get('/', checkAuth, checkModerator, methods.getUsersList);
 router.get('/:id', checkAuth, checkModerator, methods.getUser);
