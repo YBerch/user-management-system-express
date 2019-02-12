@@ -1,4 +1,5 @@
 const Group = require('models/group');
+const User = require('models/user');
 const HttpError = require('error').HttpError;
 const ObjectID = require('mongodb').ObjectID;
 
@@ -113,13 +114,28 @@ exports.deleteGroup = (req, res, next) => {
   } catch(e) {
     return next(new HttpError(401, 'Incorrect group id'))
   }
-  Group.deleteOne({_id: id})
-    .then((result) => {
-      if(result.n){
-        res.json({message: 'Delete success'})
-      } else {
-        next(new HttpError(404, 'Group not found'))
-      }
+  Group.findById({_id: id})
+    .then(group => {
+      User.find({groups: {$all: [id]}})
+        .then(users => {
+          if(users.length) {
+            return next(new HttpError(402, 'Cannot delete group with existing users'));
+          } else {
+            Group.deleteOne({_id: group._id})
+              .then((result) => {
+                if(result.n){
+                  res.json({message: 'Delete success'});
+
+                  const socket = require('bin/www');
+
+                  /** emit message for all users for update users data **/
+                  socket.emit('ping', { payload: 'groups' })
+                } else {
+                  next(new HttpError(404, 'Group not found'))
+                }
+              })
+          }
+        })
     })
     .catch(err => next(err))
 };
@@ -137,7 +153,12 @@ exports.updateGroup = (req, res, next) => {
     .then(result => {
       if(result.n){
         if(result.nModified){
-          res.json({message: 'Group update success'})
+          res.json({message: 'Group update success'});
+
+          const socket = require('bin/www');
+
+          /** emit message for all users for update users data **/
+          socket.emit('ping', { payload: 'groups' })
         } else {
           next(new HttpError(400, 'Not modified'));
         }

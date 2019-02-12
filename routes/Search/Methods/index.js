@@ -4,6 +4,11 @@ const HttpError = require('error').HttpError;
 
 /** get users list (GET) **/
 exports.search = (req, res, next) => {
+  if(!req.query.general){
+    res.json(null);
+    return;
+  }
+
   const query = new RegExp(`^${req.query.general}`, 'i');
 
   const records = {};

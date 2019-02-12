@@ -5,9 +5,19 @@ const ObjectID = require('mongodb').ObjectID;
 
 /** get users list (GET) **/
 exports.getUsersList = (req, res, next) => {
-  const { page, size } = req.query;
+  const { page, size, groupId } = req.query;
 
-  const records = User.find()
+  let id = '';
+
+  if(groupId){
+    try {
+      id = new ObjectID(groupId)
+    } catch(e){
+      return next(new HttpError(401, 'Incorrect group id'))
+    }
+  }
+
+  const records = User.find(groupId ? {groups: {$all: [id]}} : {})
     .skip(page * size - size)
     .limit(+size);
 
@@ -16,9 +26,14 @@ exports.getUsersList = (req, res, next) => {
       if(!users) {
         throw new HttpError(404, 'Database is empty')
       }
+
       records.estimatedDocumentCount()
         .then(totalSize => {
-          res.json({totalSize, [page]: users})
+          if(groupId){
+            res.json(users)
+          } else {
+            res.json({totalSize, [page]: users})
+          }
         })
     })
     .catch(err => next(err))
@@ -50,13 +65,13 @@ exports.createUser = (req, res, next) => {
 
   /** to form required parameters array for error message **/
   let requiredParams = [];
-  for(const key in req.body){
-    if(req.body.hasOwnProperty(key)) {
-      if (!req.body[key] || key === 'groups' && !req.body[key].length){
-        requiredParams.push(key)
-      }
-    }
-  }
+  // for(const key in req.body){
+  //   if(req.body.hasOwnProperty(key)) {
+  //     if (!req.body[key] || key === 'groups' && !req.body[key].length){
+  //       requiredParams.push(key)
+  //     }
+  //   }
+  // }
 
   /** throw error if required parameters array is not empty **/
   if(requiredParams.length) {
@@ -109,10 +124,8 @@ exports.deleteUser = (req, res, next) => {
   }
   User.findById(id)
     .then(user => {
-      if(!user){
+      if (!user) {
         return next(new HttpError(404, 'User not found'));
-      } else if(user.groups.length) {
-        return next(new HttpError(402, 'Cannot delete user with existing groups'));
       } else {
         User.deleteOne({_id: id})
           .then(() => {
@@ -197,7 +210,12 @@ exports.addGroupToUser = (req, res, next) => {
             } else if (user.groups.indexOf(groupId) === -1) {
               user.groups.push(groupId);
               user.save();
-              res.json({groups: user.groups, message: 'Add success'})
+              res.json({groups: user.groups, userId: id, message: 'Add success'});
+
+              const socket = require('bin/www');
+
+              /** emit message for all users for update users data **/
+              socket.emit('ping', { payload: 'users' })
             } else {
               next(new HttpError(403, 'Group already exist'))
             }
