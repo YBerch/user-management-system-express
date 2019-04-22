@@ -53,8 +53,8 @@ const createUsers = () => {
     {
       firstName: 'Admin',
       lastName: 'Adminion',
-      email: 'yuriiberch@gmail.com',
-      password: 'csvgcjyc',
+      email: 'admin@gmail.com',
+      password: '12345678',
       phone: '0938997178',
       permission: 'administrator',
       dateOfBirth: new Date('1988-01-10'),
