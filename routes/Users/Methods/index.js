@@ -1,6 +1,6 @@
-const User = require('models/user');
-const Group = require('models/group');
-const HttpError = require('error').HttpError;
+const User = require('../../../models/user');
+const Group = require('../../../models/group');
+const HttpError = require('../../../error').HttpError;
 const ObjectID = require('mongodb').ObjectID;
 
 /** get users list (GET) **/
@@ -106,7 +106,7 @@ exports.createUser = (req, res, next) => {
     .then((user) => {
       res.json({user, session: req.session, message: 'register'});
 
-      const socket = require('bin/www');
+      const socket = require('../../../bin/www');
 
       /** emit message for all users for update users data **/
       socket.emit('ping', { payload: 'users' })
@@ -131,7 +131,7 @@ exports.deleteUser = (req, res, next) => {
           .then(() => {
             res.json({message: 'Delete success'});
 
-            const socket = require('bin/www');
+            const socket = require('../../../bin/www');
 
             /** emit message for all users for update users data **/
             socket.emit('ping', { payload: 'users' })
@@ -174,7 +174,7 @@ exports.updateUser = (req, res, next) => {
         if(result.nModified){
           res.json({result, message: 'User update success'});
 
-          const socket = require('bin/www');
+          const socket = require('../../../bin/www');
 
           /** emit message for all users for update users data **/
           socket.emit('ping', { payload: 'users' })
@@ -212,7 +212,7 @@ exports.addGroupToUser = (req, res, next) => {
               user.save();
               res.json({groups: user.groups, userId: id, message: 'Add success'});
 
-              const socket = require('bin/www');
+              const socket = require('../../../bin/www');
 
               /** emit message for all users for update users data **/
               socket.emit('ping', { payload: 'users' })
@@ -250,7 +250,7 @@ exports.deleteGroupFromUser = (req, res, next) => {
               user.save();
               res.json({groups: user.groups, userId: id, message: 'Delete success'});
 
-              const socket = require('bin/www');
+              const socket = require('../../../bin/www');
 
               /** emit message for all users for update users data **/
               socket.emit('ping', { payload: 'users' })

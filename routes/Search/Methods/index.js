@@ -1,6 +1,6 @@
-const User = require('models/user');
-const Group = require('models/group');
-const HttpError = require('error').HttpError;
+const User = require('../../../models/user');
+const Group = require('../../../models/group');
+const HttpError = require('../../../error').HttpError;
 
 /** get users list (GET) **/
 exports.search = (req, res, next) => {
