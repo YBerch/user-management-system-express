@@ -1,4 +1,4 @@
-const mongoose = require('lib/mongoose');
+const mongoose = require('./lib/mongoose');
 mongoose.set('debug', true);
 
 const open = () => {
@@ -11,8 +11,8 @@ const dropDatabase = () => {
 };
 
 const requireModels = () => {
-  require('models/user');
-  require('models/group');
+  require('./models/user');
+  require('./models/group');
   return Promise.all(Object.values(mongoose.models).map((item) => {
     item.ensureIndexes()
   }))

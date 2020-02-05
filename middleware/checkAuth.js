@@ -1,4 +1,4 @@
-const HttpError = require('error').HttpError;
+const HttpError = require('../error').HttpError;
 
 module.exports = (req, res, next) => {
   if(!req.session.user.id){

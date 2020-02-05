@@ -1,6 +1,6 @@
-const User = require('models/user');
-const Group = require('models/group');
-const HttpError = require('error').HttpError;
+const User = require('../../../models/user');
+const Group = require('../../../models/group');
+const HttpError = require('../../../error').HttpError;
 const ObjectID = require('mongodb').ObjectID;
 
 /** get users list (GET) **/
