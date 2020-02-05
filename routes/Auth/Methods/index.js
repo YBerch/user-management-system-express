@@ -1,6 +1,6 @@
-const User = require('models/user');
-const HttpError = require('error/index').HttpError;
-const AuthError = require('error/index').AuthError;
+const User = require('../../../models/user');
+const HttpError = require('../../../error').HttpError;
+const AuthError = require('../../../error').AuthError;
 
 /** user log in (POST) **/
 exports.signIn = (req, res, next) => {

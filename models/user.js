@@ -1,6 +1,6 @@
 const crypto = require('crypto');
 
-const mongoose = require('lib/mongoose'), Schema = mongoose.Schema;
+const mongoose = require('../lib/mongoose'), Schema = mongoose.Schema;
 
 const userSchema = new Schema({
   firstName: {

@@ -1,6 +1,6 @@
-const Group = require('models/group');
-const User = require('models/user');
-const HttpError = require('error').HttpError;
+const Group = require('../../../models/group');
+const User = require('../../../models/user');
+const HttpError = require('../../../error').HttpError;
 const ObjectID = require('mongodb').ObjectID;
 
 /** get groups list (GET) **/
@@ -96,7 +96,7 @@ exports.createGroup = (req, res, next) => {
     })
     .then(group => {
       res.json({group, message: 'Create group success'});
-      const socket = require('bin/www');
+      const socket = require('../../../bin/www');
 
       /** emit message for all users for update users data **/
       socket.emit('ping', { payload: 'groups' })
@@ -126,7 +126,7 @@ exports.deleteGroup = (req, res, next) => {
                 if(result.n){
                   res.json({message: 'Delete success'});
 
-                  const socket = require('bin/www');
+                  const socket = require('../../../bin/www');
 
                   /** emit message for all users for update users data **/
                   socket.emit('ping', { payload: 'groups' })
@@ -155,7 +155,7 @@ exports.updateGroup = (req, res, next) => {
         if(result.nModified){
           res.json({message: 'Group update success'});
 
-          const socket = require('bin/www');
+          const socket = require('../../../bin/www');
 
           /** emit message for all users for update users data **/
           socket.emit('ping', { payload: 'groups' })

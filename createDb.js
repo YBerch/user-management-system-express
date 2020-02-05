@@ -1,4 +1,4 @@
-const mongoose = require('lib/mongoose');
+const mongoose = require('./lib/mongoose');
 mongoose.set('debug', true);
 
 const open = () => {
@@ -11,8 +11,8 @@ const dropDatabase = () => {
 };
 
 const requireModels = () => {
-  require('models/user');
-  require('models/group');
+  require('./models/user');
+  require('./models/group');
   return Promise.all(Object.values(mongoose.models).map((item) => {
     item.ensureIndexes()
   }))
@@ -53,8 +53,8 @@ const createUsers = () => {
     {
       firstName: 'Admin',
       lastName: 'Adminion',
-      email: 'yuriiberch@gmail.com',
-      password: 'csvgcjyc',
+      email: 'admin@gmail.com',
+      password: '12345678',
       phone: '0938997178',
       permission: 'administrator',
       dateOfBirth: new Date('1988-01-10'),
