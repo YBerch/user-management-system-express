@@ -1,4 +1,4 @@
-const mongoose = require('lib/mongoose'), Schema = mongoose.Schema;
+const mongoose = require('../lib/mongoose'), Schema = mongoose.Schema;
 
 const groupSchema = new Schema({
   name: {
