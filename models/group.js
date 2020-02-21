@@ -13,6 +13,6 @@ const groupSchema = new Schema({
 
 });
 
-Group = mongoose.model('Group', groupSchema);
+const Group = mongoose.model('Group', groupSchema);
 
 module.exports = Group;

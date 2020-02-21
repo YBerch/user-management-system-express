@@ -32,7 +32,7 @@ const io = require('socket.io').listen(server);
 io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     socket.emit('ping', { payload: 'disconnect' })
-  })
+  });
   socket.emit('ping', { payload: 'connect' });
 });
 
@@ -52,7 +52,7 @@ server.on('listening', onListening);
  */
 
 function normalizePort(val) {
-  var port = parseInt(val, 10);
+  let port = parseInt(val, 10);
 
   if (isNaN(port)) {
     // named pipe
@@ -76,9 +76,7 @@ function onError(error) {
     throw error;
   }
 
-  const bind = typeof port === 'string'
-    ? 'Pipe ' + port
-    : 'Port ' + port;
+  const bind = typeof port === 'string' ? 'Pipe ' + port : 'Port ' + port;
 
   // handle specific listen errors with friendly messages
   switch (error.code) {
@@ -100,9 +98,7 @@ function onError(error) {
  */
 
 function onListening() {
-  var addr = server.address();
-  var bind = typeof addr === 'string'
-    ? 'pipe ' + addr
-    : 'port ' + app.get('port');
+  let addr = server.address();
+  let bind = typeof addr === 'string' ? 'pipe ' + addr : 'port ' + app.get('port');
   debug('Listening on ' + bind);
 }

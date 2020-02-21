@@ -4,7 +4,8 @@
     "uri": "mongodb://localhost/ums",
     "enableFeatures": {
       "useNewUrlParser": true,
-      "useCreateIndex": true
+      "useCreateIndex": true,
+      "useUnifiedTopology": true
     },
     "options": {
       "server": {

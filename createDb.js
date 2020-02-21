@@ -1,6 +1,7 @@
 const mongoose = require('./lib/mongoose');
 mongoose.set('debug', true);
 
+
 const open = () => {
   return new Promise((resolve) => mongoose.connection.on('open', resolve))
 };
