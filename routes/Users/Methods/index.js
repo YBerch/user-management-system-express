@@ -1,159 +1,107 @@
 const User = require('../../../models/user');
 const Group = require('../../../models/group');
 const HttpError = require('../../../error').HttpError;
-const ObjectID = require('mongodb').ObjectID;
+const ObjectId = require('mongodb').ObjectId;
 
 /** get users list (GET) **/
 exports.getUsersList = (req, res, next) => {
-  const { page, size, groupId } = req.query;
+  const { page = 1, size = 20, groupId } = req.query;
 
-  let id = '';
-
-  if(groupId){
-    try {
-      id = new ObjectID(groupId)
-    } catch(e){
-      return next(new HttpError(401, 'Incorrect group id'))
-    }
+  let id = null;
+  if (groupId) {
+    if (!ObjectId.isValid(groupId)) return next(new HttpError(401, 'Incorrect group id'));
+    id = new ObjectId(groupId);
   }
 
-  const records = User.find(groupId ? {groups: {$all: [id]}} : {})
+  const records = User.find(groupId ? { groups: { $all: [id] } } : {})
     .skip(page * size - size)
     .limit(+size);
 
   records
     .then(users => {
-      if(!users) {
-        throw new HttpError(404, 'Database is empty')
-      }
-
-      records.estimatedDocumentCount()
-        .then(totalSize => {
-          if(groupId){
-            res.json(users)
-          } else {
-            res.json({totalSize, [page]: users})
-          }
-        })
+      if (!users) throw new HttpError(404, 'Database is empty');
+      if (groupId) return res.json(users);
+      User.estimatedDocumentCount()
+        .then(totalSize => res.json({ totalSize, [page]: users }))
+        .catch(err => next(err));
     })
-    .catch(err => next(err))
+    .catch(err => next(err));
 };
 
 /** get user by id (GET)**/
 exports.getUser = (req, res, next) => {
-  let id = null;
-  try {
-    id = new ObjectID(req.params.id)
-  } catch(e){
-    return next(new HttpError(401, 'Incorrect user id'))
-  }
+  const idParam = req.params.id;
+  if (!ObjectId.isValid(idParam)) return next(new HttpError(401, 'Incorrect user id'));
+  const id = new ObjectId(idParam);
 
   User.findById(id)
     .then(user => {
-      if(!user){
-        next(new HttpError(404, 'User not found'))
-      } else {
-        res.json(user)
-      }
+      if (!user) return next(new HttpError(404, 'User not found'));
+      res.json(user);
     })
-    .catch(err => next(err))
+    .catch(err => next(err));
 };
 
 /** create user (POST) **/
 exports.createUser = (req, res, next) => {
-  const {email, phone, permission} = req.body;
+  const { email, phone, permission } = req.body;
 
-  /** to form required parameters array for error message **/
   let requiredParams = [];
-  // for(const key in req.body){
-  //   if(req.body.hasOwnProperty(key)) {
-  //     if (!req.body[key] || key === 'groups' && !req.body[key].length){
-  //       requiredParams.push(key)
-  //     }
-  //   }
-  // }
-
-  /** throw error if required parameters array is not empty **/
-  if(requiredParams.length) {
-    const responseMessage = `${requiredParams.length > 1 ?
-      'Fields:' : 'Field:'} '${requiredParams.join(`', '`)}' - required!`;
-    throw new HttpError(402, responseMessage);
+  // validate required fields if needed
+  if (requiredParams.length) {
+    const responseMessage = `${requiredParams.length > 1 ? 'Fields:' : 'Field:'} '${requiredParams.join(`', '`)}' - required!`;
+    return next(new HttpError(402, responseMessage));
   }
 
-  if(req.session.user.permission === 'moderator' && permission !== 'user'){
-    throw new HttpError(403, 'Moderator can create user only with "user" permission ')
+  if (req.session && req.session.user && req.session.user.permission === 'moderator' && permission !== 'user') {
+    return next(new HttpError(403, 'Moderator can create user only with "user" permission '));
   }
 
   const permissionValid = permission === 'administrator' || permission === 'moderator' || permission === 'user';
+  if (!permissionValid) return next(new HttpError(400, 'permission type does not exist'));
 
-  if(!permissionValid){
-    throw new HttpError(400, 'permission type does not exist')
-  }
-
-  User.findOne({
-    $or: [
-      {email},
-      {phone}
-    ]
-  })
+  User.findOne({ $or: [{ email }, { phone }] })
     .then(user => {
-      if(user){
-        throw new HttpError(400, 'User with this email or phone already exist')
-      } else {
-        return new User(req.body).save();
-      }
+      if (user) throw new HttpError(400, 'User with this email or phone already exist');
+      return new User(req.body).save();
     })
-    .then((user) => {
-      res.json({user, session: req.session, message: 'register'});
-
+    .then(user => {
+      res.json({ user, session: req.session, message: 'register' });
       const socket = require('../../../bin/www');
-
-      /** emit message for all users for update users data **/
-      socket.emit('ping', { payload: 'users' })
+      socket.emit('ping', { payload: 'users' });
     })
     .catch(err => next(err));
 };
 
 /** delete user (DELETE) **/
 exports.deleteUser = (req, res, next) => {
-  let id = null;
-  try {
-    id = ObjectID(req.params.id);
-  } catch(e) {
-    return next(new HttpError(401, 'Incorrect user id'))
-  }
+  const idParam = req.params.id;
+  if (!ObjectId.isValid(idParam)) return next(new HttpError(401, 'Incorrect user id'));
+  const id = new ObjectId(idParam);
+
   User.findById(id)
     .then(user => {
-      if (!user) {
-        return next(new HttpError(404, 'User not found'));
-      } else {
-        User.deleteOne({_id: id})
-          .then(() => {
-            res.json({message: 'Delete success'});
-
-            const socket = require('../../../bin/www');
-
-            /** emit message for all users for update users data **/
-            socket.emit('ping', { payload: 'users' })
-          })
-      }
+      if (!user) return next(new HttpError(404, 'User not found'));
+      return User.deleteOne({ _id: id });
     })
-    .catch(err => next(err))
+    .then(() => {
+      res.json({ message: 'Delete success' });
+      const socket = require('../../../bin/www');
+      socket.emit('ping', { payload: 'users' });
+    })
+    .catch(err => next(err));
 };
 
 /** update user (PATCH) **/
 exports.updateUser = (req, res, next) => {
-  const {firstName, lastName, email, phone, permission} = req.body;
+  const { firstName, lastName, email, phone, permission } = req.body;
 
-  if(req.session.user.permission === 'moderator' && permission !== 'user'){
-    throw new HttpError(403, 'Moderator can create user only with "user" permission ')
+  if (req.session && req.session.user && req.session.user.permission === 'moderator' && permission !== 'user') {
+    return next(new HttpError(403, 'Moderator can create user only with "user" permission '));
   }
 
   const permissionValid = permission === 'administrator' || permission === 'moderator' || permission === 'user';
-
-  if(!permissionValid){
-    throw new HttpError(400, 'permission type does not exist')
-  }
+  if (!permissionValid) return next(new HttpError(400, 'permission type does not exist'));
 
   const updateObject = {};
   firstName && (updateObject.firstName = firstName);
@@ -162,103 +110,85 @@ exports.updateUser = (req, res, next) => {
   phone && (updateObject.phone = phone);
   permission && (updateObject.permission = permission);
 
-  let id = null;
-  try {
-    id = ObjectID(req.params.id);
-  } catch(e) {
-    return next(new HttpError(401, 'Incorrect user id'))
-  }
-  User.updateOne({_id: id}, updateObject)
+  const idParam = req.params.id;
+  if (!ObjectId.isValid(idParam)) return next(new HttpError(401, 'Incorrect user id'));
+  const id = new ObjectId(idParam);
+
+  User.updateOne({ _id: id }, updateObject)
     .then(result => {
-      if(result.n){
-        if(result.nModified){
-          res.json({result, message: 'User update success'});
-
+      if (result.n) {
+        if (result.nModified) {
+          res.json({ result, message: 'User update success' });
           const socket = require('../../../bin/www');
-
-          /** emit message for all users for update users data **/
-          socket.emit('ping', { payload: 'users' })
+          socket.emit('ping', { payload: 'users' });
         } else {
-          next(new HttpError(400, 'Not modified'));
+          return next(new HttpError(400, 'Not modified'));
         }
       } else {
-        next(new HttpError(404, 'User not found'));
+        return next(new HttpError(404, 'User not found'));
       }
     })
-    .catch(err => next(err))
+    .catch(err => next(err));
 };
 
 /** add group to user (PUT) **/
 exports.addGroupToUser = (req, res, next) => {
-  let groupId = null;
-  let id = null;
-  try {
-    id = ObjectID(req.params.id);
-    groupId = ObjectID(req.body.groupId)
-  } catch(e) {
-    return next(new HttpError(401, 'Incorrect id'))
-  }
+  const userIdSource = req.params.id || (req.body && (req.body.userId || req.body.id));
+  const groupIdSource = req.body && (req.body.groupId || req.body.group_id);
+
+  if (!userIdSource || !ObjectId.isValid(userIdSource)) return next(new HttpError(401, 'Incorrect id'));
+  if (!groupIdSource || !ObjectId.isValid(groupIdSource)) return next(new HttpError(401, 'Incorrect id'));
+
+  const id = new ObjectId(userIdSource);
+  const groupId = new ObjectId(groupIdSource);
+
   User.findById(id)
     .then(user => {
-      if(!user) {
-        next(new HttpError(401, 'User does not exist'))
-      } else {
-        Group.findById(groupId)
-          .then(group => {
-            if (!group) {
-              next(new HttpError(403, 'Group does not exist'))
-            } else if (user.groups.indexOf(groupId) === -1) {
-              user.groups.push(groupId);
-              user.save();
-              res.json({groups: user.groups, userId: id, message: 'Add success'});
-
-              const socket = require('../../../bin/www');
-
-              /** emit message for all users for update users data **/
-              socket.emit('ping', { payload: 'users' })
-            } else {
-              next(new HttpError(403, 'Group already exist'))
-            }
+      if (!user) return next(new HttpError(401, 'User does not exist'));
+      return Group.findById(groupId).then(group => {
+        if (!group) return next(new HttpError(403, 'Group does not exist'));
+        const alreadyHas = user.groups.some(g => String(g) === String(groupId));
+        if (!alreadyHas) {
+          user.groups.push(groupId);
+          return user.save().then(() => {
+            res.json({ groups: user.groups, userId: id, message: 'Add success' });
+            const io = require('../../../bin/www');
+            io.emit('ping', { payload: 'users' });
           });
-      }
+        }
+        return next(new HttpError(403, 'Group already exist'));
+      });
     })
-    .catch(err => next(err))
+    .catch(err => next(err));
 };
 
 /** delete user from group (DELETE) **/
 exports.deleteGroupFromUser = (req, res, next) => {
-  let groupId = null;
-  let id = null;
-  try {
-    id = ObjectID(req.params.id);
-    groupId = ObjectID(req.body.groupId)
-  } catch(e) {
-    return next(new HttpError(401, 'Incorrect id'))
-  }
+  const userIdSource = req.params.id || (req.body && (req.body.userId || req.body.id));
+  const groupIdSource = req.body && (req.body.groupId || req.body.group_id);
+
+  if (!userIdSource || !ObjectId.isValid(userIdSource)) return next(new HttpError(401, 'Incorrect id'));
+  if (!groupIdSource || !ObjectId.isValid(groupIdSource)) return next(new HttpError(401, 'Incorrect id'));
+
+  const id = new ObjectId(userIdSource);
+  const groupId = new ObjectId(groupIdSource);
+
   User.findById(id)
     .then(user => {
-      if(!user) {
-        next(new HttpError(401, 'User does not exist'))
-      } else {
-        Group.findById(groupId)
-          .then(group => {
-            const index = user.groups.indexOf(groupId);
-            if (!group) {
-              next(new HttpError(403, 'Group does not exist'))
-            } else if (index !== -1) {
-              user.groups.splice(index, 1);
-              user.save();
-              res.json({groups: user.groups, userId: id, message: 'Delete success'});
-
-              const socket = require('../../../bin/www');
-
-              /** emit message for all users for update users data **/
-              socket.emit('ping', { payload: 'users' })
-            } else {
-              next(new HttpError(403, 'Group does not exist in user list'))
-            }
+      if (!user) return next(new HttpError(401, 'User does not exist'));
+      return Group.findById(groupId).then(group => {
+        if (!group) return next(new HttpError(403, 'Group does not exist'));
+        const index = user.groups.findIndex(g => String(g) === String(groupId));
+        if (index !== -1) {
+          user.groups.splice(index, 1);
+          return user.save().then(() => {
+            res.json({ groups: user.groups, userId: id, message: 'Delete success' });
+            const io = require('../../../bin/www');
+            io.emit('ping', { payload: 'users' });
           });
-      }
+        }
+        return next(new HttpError(403, 'Group does not exist in user list'));
+      });
     })
-    .catch(err => next(err))
+    .catch(err => next(err));
 };

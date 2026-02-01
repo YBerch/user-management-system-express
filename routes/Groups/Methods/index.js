@@ -1,7 +1,7 @@
 const Group = require('../../../models/group');
 const User = require('../../../models/user');
 const HttpError = require('../../../error').HttpError;
-const ObjectID = require('mongodb').ObjectID;
+const ObjectId = require('mongodb').ObjectId;
 
 /** get groups list (GET) **/
 exports.getGroupsList = (req, res, next) => {
@@ -13,7 +13,7 @@ exports.getGroupsList = (req, res, next) => {
     if (Array.isArray(groupsArr)) {
       try {
         for(let i=0; i<groupsArr.length; i++){
-          new ObjectID(groupsArr[i])
+          new ObjectId(groupsArr[i])
         }
       } catch (e) {
         return next(new HttpError(401, 'Incorrect group id'))
@@ -32,7 +32,7 @@ exports.getGroupsList = (req, res, next) => {
       if(!groups) {
         throw new HttpError(404, 'Database is empty')
       }
-      records.estimatedDocumentCount()
+      Group.estimatedDocumentCount()
         .then(totalSize => {
           const listName = page || 'list';
           if(groupsArr){
@@ -49,7 +49,7 @@ exports.getGroupsList = (req, res, next) => {
 exports.getGroup = (req, res, next) => {
   let id = null;
   try {
-    id = new ObjectID(req.params.id)
+    id = new ObjectId(req.params.id)
   } catch(e){
     return next(new HttpError(401, 'Incorrect group id'))
   }
@@ -67,6 +67,8 @@ exports.getGroup = (req, res, next) => {
 
 /** create group (POST) **/
 exports.createGroup = (req, res, next) => {
+  console.log("createGroup request body:", req.body);
+
   const {name} = req.body;
 
   /** to form required parameters array for error message **/
@@ -110,7 +112,7 @@ exports.createGroup = (req, res, next) => {
 exports.deleteGroup = (req, res, next) => {
   let id = null;
   try {
-    id = ObjectID(req.params.id);
+    id = ObjectId(req.params.id);
   } catch(e) {
     return next(new HttpError(401, 'Incorrect group id'))
   }
@@ -145,7 +147,7 @@ exports.updateGroup = (req, res, next) => {
   const {name} = req.body;
   let id = null;
   try {
-    id = ObjectID(req.params.id);
+    id = ObjectId(req.params.id);
   } catch(e) {
     return next(new HttpError(401, 'Incorrect group id'))
   }

@@ -58,7 +58,13 @@ app.use((req, res, next) => {
 
 /** error handler **/
 app.use(function(err, req, res, next) {
-  res.status(err.status).send({message: err.message});
+  const status = err && err.status ? err.status : 500;
+  if (res.sendHttpError) {
+    res.status(status);
+    res.sendHttpError(err);
+  } else {
+    res.status(status).send({message: err.message || 'Internal Server Error'});
+  }
 });
 
 module.exports = app;
